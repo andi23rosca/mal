@@ -1,36 +1,38 @@
 const std = @import("std");
-const warn = @import("std").debug.warn;
+const print = std.debug.print;
+const io = std.io;
 
-const getline = @import("readline.zig").getline;
+const Allocator = std.heap.c_allocator;
 
-const Allocator = @import("std").heap.c_allocator;
-
-fn READ(a: [] u8) [] u8 {
-    return a;
+fn READ(pr: []u8) []u8 {
+    return pr;
+}
+fn EVAL(pr: []u8) []u8 {
+    return pr;
+}
+fn PRINT(pr: []u8) []u8 {
+    return pr;
 }
 
-fn EVAL(a: [] u8) [] u8 {
-    return a;
+fn rep(pr: []u8) []u8 {
+    return PRINT(EVAL(READ(pr)));
 }
 
-fn PRINT(a: [] u8) [] u8 {
-    return a;
-}
+pub fn main() anyerror!void {
+    const max_size = 1024;
+    const stdout = io.getStdOut().writer();
+    const stdin = io.getStdIn().reader();
 
-fn rep(input: [] u8) [] u8 {
-    var read_input = READ(input);
-    var eval_input = EVAL(read_input);
-    var print_input = PRINT(eval_input);
-    return print_input;
-}
+    var buf: [max_size]u8 = undefined;
+    var fba = std.heap.FixedBufferAllocator.init(&buf);
+    var alloc = &fba.allocator;
 
-pub fn main() !void {
-    const stdout_file = try std.io.getStdOut();
-    while(true) {
-        var line = (try getline(Allocator)) orelse break;
-        var output = rep(line);
-        try stdout_file.write(output);
-        Allocator.free(output);
-        try stdout_file.write("\n");
+    // const bytes = try alloc.allocator.alloc(u8, max_size);
+    while (true) {
+        try stdout.print("user> ", .{});
+        const pr = try stdin.readUntilDelimiterAlloc(alloc, '\n', max_size);
+        const toOut = rep(pr);
+        print("\n{s}\n", .{toOut});
+        alloc.free(pr);
     }
 }
