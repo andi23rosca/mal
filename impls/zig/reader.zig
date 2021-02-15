@@ -1,5 +1,7 @@
 const std = @import("std");
-const ArrayList = @import("std").ArrayList;
+const eql = std.mem.eql;
+const ArrayList = std.ArrayList;
+const AutoHashMap = std.AutoHashMap;
 
 const TkState = enum {
     parseError,
@@ -11,14 +13,31 @@ const TkState = enum {
     captureNonSpecial,
 };
 
+pub const MalKind = enum {
+    list, number, symbol, boolean, string, nil, hash, vector, keyword
+};
+pub const MalExpr = union(MalKind) {
+    number: f64,
+    boolean: bool,
+    nil: null,
+    string: ArrayList(u8),
+    symbol: ArrayList(u8),
+    keyword: ArrayList(u8),
+    list: ArrayList(MalExpr),
+    vector: ArrayList(MalExpr),
+    hash: AutoHashMap(u8, MalExpr),
+};
+
 pub const Reader = struct {
     index: u64,
     tokens: ArrayList([]u8),
+    allocator: *std.mem.Allocator,
 
     pub fn init(allocator: *std.mem.Allocator) Reader {
         return Reader{
             .index = 0,
             .tokens = ArrayList([]u8).init(allocator),
+            .allocator = allocator,
         };
     }
     pub fn deinit(reader: *Reader) void {
@@ -137,7 +156,59 @@ pub const Reader = struct {
         }
         if (state == TkState.parseError) return error.ParseError;
     }
+
+    pub fn readForm(reader: *Reader) MalExpr {
+        const current = reader.peek();
+        if (strEql(current, "("))
+            return reader.readList();
+        return reader.readAtom();
+    }
+    pub fn readList(reader: *Reader) MalExpr {
+        var list = MalExpr{ .list = ArrayList(MalExpr).init(reader.allocator) };
+        reader.next();
+        var listDone = false;
+
+        while (!listDone and reader.index < reader.tokens.items.len) {
+            var token = reader.peek();
+            if (strEql(token, ")")) {
+                listDone = true;
+                reader.next();
+                continue;
+            }
+            list.append(reader.readForm());
+        }
+        if (!listDone) return error.UnmatchedParens;
+        return list;
+    }
+    pub fn readAtom(reader: *Reader) MalExpr {
+        var token = reader.peek();
+        reader.next();
+
+        if (std.fmt.parseFloat(f64, token)) |num| {
+            return MalExpr{ .number = num };
+        }
+
+        var str = ArrayList(u8).init(reader.allocator);
+
+        if (token[0] == '"') {
+            str.appendSlice(token[1 .. token.len - 1]);
+            return MalExpr{ .string = str };
+        }
+        if (token[0] == ':') {
+            str.appendSlice(token);
+            return MalExpr{ .keyword = str };
+        }
+
+        str.appendSlice(token);
+        return MalExpr{ .symbol = str };
+    }
 };
+pub fn readStr(allocator: *std.mem.Allocator, input: []u8) !MalExpr {
+    var reader = Reader.init(allocator);
+    defer reader.deinit();
+    try reader.tokenize(input);
+    return readForm();
+}
 
 // test "tokenizer" {
 //     var allocator = std.testing.allocator;
@@ -155,6 +226,16 @@ pub const Reader = struct {
 //     }
 // }
 
+pub fn strEql(s1: []u8, s2: []u8) bool {
+    return eql(u8, s1, s2);
+}
+test "strEql" {
+    var s1 = try std.testing.allocator.dupe(u8, "abc");
+    defer std.testing.allocator.free(s1);
+    var s2 = try std.testing.allocator.dupe(u8, "abc");
+    defer std.testing.allocator.free(s2);
+    std.testing.expect(strEql(s1, s2));
+}
 pub fn isDelimiter(c: u8) bool {
     return c == ' ' or c == '\n' or c == '\r' or c == '\t' or c == ',';
 }
