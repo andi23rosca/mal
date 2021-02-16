@@ -1,9 +1,64 @@
 const std = @import("std");
 const MalExpr = @import("reader.zig").MalExpr;
 
-pub fn printStr(allocator: *std.mem.Allocator, ast: MalExpr) ![]u8 {
-    var result: []u8;
+pub fn printStr(allocator: *std.mem.Allocator, ast: MalExpr) anyerror![]u8 {
     switch (ast) {
-        .number => |value| {},
+        .number => |value| {
+            var buf: [1079]u8 = undefined;
+            var result = try std.fmt.bufPrint(&buf, "{d}", .{value});
+            return result;
+        },
+        .symbol, .keyword => |value| {
+            return value.items;
+        },
+        .string => |value| {
+            var result: []u8 = try allocator.alloc(u8, value.items.len + 2);
+            std.mem.copy(u8, result[0..1], "\"");
+            std.mem.copy(u8, result[1 .. result.len - 1], value.items);
+            std.mem.copy(u8, result[result.len - 1 ..], "\"");
+            return result;
+        },
+        .nil => {
+            var result = try allocator.dupe(u8, "nil");
+            return result;
+        },
+        .boolean => |value| {
+            if (value) {
+                return try allocator.dupe(u8, "true");
+            }
+            return try allocator.dupe(u8, "false");
+        },
+        .list, .vector => |value| {
+            var result = std.ArrayList(u8).init(allocator);
+            try result.appendSlice("(");
+            for (value.items) |token, index| {
+                var printed = try printStr(allocator, token);
+                try result.appendSlice(printed);
+                if (index < value.items.len - 1)
+                    try result.appendSlice(" ");
+            }
+            try result.appendSlice(")");
+            return result.items;
+        },
     }
 }
+
+// test "arraylist" {
+//     var alloc = std.testing.allocator;
+//     var asd = std.ArrayList(u8).init(alloc);
+//     var num: f64 = 123123.34343;
+//     var result: [1079]u8 = undefined;
+//     var abc = try std.fmt.bufPrint(&result, "{d}", .{num});
+//     // try asd.appendSlice("asd");
+
+//     // var result: []u8 = try alloc.alloc(u8, asd.items.len + 2);
+//     // // result[0] = '"';
+//     // std.mem.copy(u8, result[0..1], "\"");
+//     // std.mem.copy(u8, result[1 .. result.len - 1], asd.items);
+//     // std.mem.copy(u8, result[result.len - 1 ..], "\"");
+
+//     // std.debug.print("{s}\n", .{result});
+//     std.debug.print("{s}\n", .{abc});
+//     asd.deinit();
+//     // alloc.free(result);
+// }
