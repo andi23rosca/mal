@@ -27,17 +27,17 @@ pub fn main() anyerror!void {
     const stdout = io.getStdOut().writer();
     const stdin = io.getStdIn().reader();
 
-    var buf: [max_size]u8 = undefined;
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    var alloc = &arena.allocator;
-    defer arena.deinit();
-
     while (true) {
+        var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+        var alloc = &arena.allocator;
+
         try stdout.print("user> ", .{});
-        const pr = try stdin.readUntilDelimiterAlloc(alloc, '\n', max_size);
-        const toOut = try rep(alloc, pr);
-        // print("{s}", .{".*\n"});
-        print("{s}\n", .{toOut});
+        const input = try stdin.readUntilDelimiterAlloc(alloc, '\n', max_size);
+
+        const output = try rep(alloc, input);
+        try stdout.print("{s}", .{output});
+        try stdout.print("\n", .{});
+
         arena.deinit();
     }
 }

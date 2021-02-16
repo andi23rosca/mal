@@ -9,6 +9,7 @@ const TkState = enum {
     findStartOfToken,
     captureSpecialDoubleToken,
     captureString,
+    captureStringEscape,
     captureSemicolonToken,
     captureNonSpecial,
 };
@@ -67,7 +68,11 @@ pub const Reader = struct {
             // Handle end of input
             if (index >= input.len) {
                 switch (state) {
-                    .captureString, .captureSpecialDoubleToken, .parseError => {
+                    .captureString, .captureStringEscape => {
+                        std.debug.warn("{s}\n", .{"expected \", got EOF"});
+                        state = TkState.parseError;
+                    },
+                    .captureSpecialDoubleToken, .parseError => {
                         state = TkState.parseError;
                     },
                     .captureNonSpecial, .captureSemicolonToken => {
@@ -127,12 +132,21 @@ pub const Reader = struct {
                     state = TkState.findStartOfToken;
                 },
                 .captureString => {
-                    if (current == '"' and !(input[index - 1] == '\\')) {
+                    if (current == '"') {
                         try reader.tokens.append(input[tokenStart .. index + 1]);
                         index += 1;
                         state = TkState.findStartOfToken;
                         continue;
                     }
+                    if (current == '\\') {
+                        state = TkState.captureStringEscape;
+                        index += 1;
+                        continue;
+                    }
+                    index += 1;
+                },
+                .captureStringEscape => {
+                    state = TkState.captureString;
                     index += 1;
                 },
                 .captureSemicolonToken => {
@@ -185,7 +199,10 @@ pub const Reader = struct {
             var form = try reader.readForm();
             try malist.list.append(form);
         }
-        if (!listDone) return error.UnmatchedParens;
+        if (!listDone) {
+            std.debug.warn("{s}\n", .{"expected ), got EOF"});
+            return error.UnmatchedParens;
+        }
         return malist;
     }
     pub fn readAtom(reader: *Reader) !MalExpr {

@@ -6,7 +6,7 @@ pub fn printStr(allocator: *std.mem.Allocator, ast: MalExpr) anyerror![]u8 {
         .number => |value| {
             var buf: [1079]u8 = undefined;
             var result = try std.fmt.bufPrint(&buf, "{d}", .{value});
-            return result;
+            return result[0..];
         },
         .symbol, .keyword => |value| {
             return value.items;
@@ -43,22 +43,21 @@ pub fn printStr(allocator: *std.mem.Allocator, ast: MalExpr) anyerror![]u8 {
     }
 }
 
-// test "arraylist" {
-//     var alloc = std.testing.allocator;
-//     var asd = std.ArrayList(u8).init(alloc);
-//     var num: f64 = 123123.34343;
-//     var result: [1079]u8 = undefined;
-//     var abc = try std.fmt.bufPrint(&result, "{d}", .{num});
-//     // try asd.appendSlice("asd");
+test "arraylist" {
+    var alloc = std.testing.allocator;
+    var num: f64 = 23.1;
+    var ast = MalExpr{ .number = num };
+    var out = try printStr(alloc, ast);
+    std.testing.expect(std.mem.eql(u8, out, "23.1"));
 
-//     // var result: []u8 = try alloc.alloc(u8, asd.items.len + 2);
-//     // // result[0] = '"';
-//     // std.mem.copy(u8, result[0..1], "\"");
-//     // std.mem.copy(u8, result[1 .. result.len - 1], asd.items);
-//     // std.mem.copy(u8, result[result.len - 1 ..], "\"");
+    var list = std.ArrayList(MalExpr).init(alloc);
+    ast = MalExpr{ .list = list };
+    try ast.list.append(MalExpr{ .number = 23 });
+    try ast.list.append(MalExpr{ .boolean = true });
+    out = try printStr(alloc, ast);
+    std.debug.warn("{s}", .{out});
+    std.testing.expect(std.mem.eql(u8, out, "(23 true)"));
 
-//     // std.debug.print("{s}\n", .{result});
-//     std.debug.print("{s}\n", .{abc});
-//     asd.deinit();
-//     // alloc.free(result);
-// }
+    // alloc.free(out);/s
+    list.deinit();
+}
