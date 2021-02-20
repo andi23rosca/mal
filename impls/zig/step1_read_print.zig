@@ -34,7 +34,7 @@ pub fn main() anyerror!void {
         try stdout.print("user> ", .{});
         const input = try stdin.readUntilDelimiterAlloc(alloc, '\n', max_size);
 
-        const output = try rep(alloc, input);
+        const output = rep(alloc, input) catch "";
         try stdout.print("{s}", .{output});
         try stdout.print("\n", .{});
 

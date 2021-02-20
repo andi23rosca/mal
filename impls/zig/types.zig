@@ -1,6 +1,6 @@
 const std = @import("std");
 const ArrayList = std.ArrayList;
-const AutoHasMap = std.AutoHashMap;
+const StringHashMap = std.StringHashMap;
 
 pub const TkState = enum {
     parseError,
@@ -35,6 +35,6 @@ pub const MalExpr = union(MalKind) {
     keyword: ArrayList(u8),
     list: ArrayList(MalExpr),
     vector: ArrayList(MalExpr),
-    // hash: AutoHashMap(u8, MalExpr),
+    // hash: StringHashMap(MalExpr),
     func: fn (args: []MalExpr, out: *MalExpr) void,
 };

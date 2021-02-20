@@ -44,16 +44,32 @@ fn evalAst(allocator: *std.mem.Allocator, ast: MalExpr, env: MalEnv) !MalExpr {
 }
 
 fn malAdd(args: []MalExpr, out: *MalExpr) void {
-    out.number = args[0].number + args[1].number;
+    out.number = args[0].number;
+    for (args[1..]) |arg| {
+        out.number += arg.number;
+    }
 }
 fn malSub(args: []MalExpr, out: *MalExpr) void {
-    out.number = args[0].number - args[1].number;
+    if (args.len == 1) {
+        out.number = -args[0].number;
+        return;
+    }
+    out.number = args[0].number;
+    for (args[1..]) |arg| {
+        out.number -= arg.number;
+    }
 }
 fn malMult(args: []MalExpr, out: *MalExpr) void {
-    out.number = args[0].number * args[1].number;
+    out.number = args[0].number;
+    for (args[1..]) |arg| {
+        out.number *= arg.number;
+    }
 }
 fn malDiv(args: []MalExpr, out: *MalExpr) void {
-    out.number = args[0].number / args[1].number;
+    out.number = args[0].number;
+    for (args[1..]) |arg| {
+        out.number /= arg.number;
+    }
 }
 fn EVAL(allocator: *std.mem.Allocator, ast: MalExpr, env: MalEnv) anyerror!MalExpr {
     // return ast;

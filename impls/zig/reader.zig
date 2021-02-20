@@ -2,6 +2,7 @@ const std = @import("std");
 const eql = std.mem.eql;
 const types = @import("types.zig");
 const ArrayList = std.ArrayList;
+const StringHashMap = std.StringHashMap;
 const MalExpr = types.MalExpr;
 const MalKind = types.MalKind;
 const TkState = types.TkState;
@@ -153,9 +154,35 @@ pub const Reader = struct {
             return try reader.readList();
         if (strEql(current, "["))
             return try reader.readVector();
+        // if (strEql(current, "{"))
+        //     return try reader.readHash();
         return try reader.readAtom();
     }
-    fn readSequence(reader: *Reader, seqEndSym: []const u8) !ArrayList(MalExpr) {
+    // pub fn readHash(reader: *Reader) !StringHashMap(MalExpr) {
+    //     var malHash = MalExpr{ .hash = StringHashMap(MalExpr).init(reader.allocator) };
+    //     reader.next();
+    //     var hashDone = false;
+    //     while (!hashDone and reader.index < reader.tokens.items.len) {
+    //         var key = reader.peek();
+    //         if (strEql(key, "}")) {
+    //             hashDone = true;
+    //             reader.next();
+    //             continue;
+    //         }
+    //         reader.next();
+    //         if (reader.index >= reader.tokens.items.len) {
+    //             continue;
+    //         }
+    //         var value = try reader.readForm();
+    //         try malHash.hash.put(key, value);
+    //     }
+    //     if (!hashDone) {
+    //         std.debug.warn("expected }, got EOF\n", .{});
+    //         return error.UnmatchedParens;
+    //     }
+    //     return malHash;
+    // }
+    pub fn readSequence(reader: *Reader, seqEndSym: []const u8) !ArrayList(MalExpr) {
         var ls = ArrayList(MalExpr).init(reader.allocator);
         reader.next();
         var listDone = false;
