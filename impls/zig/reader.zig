@@ -151,35 +151,46 @@ pub const Reader = struct {
         const current = reader.peek();
         if (strEql(current, "("))
             return try reader.readList();
+        if (strEql(current, "["))
+            return try reader.readVector();
         return try reader.readAtom();
     }
-    pub fn readList(reader: *Reader) !MalExpr {
-        var malist = MalExpr{ .list = ArrayList(MalExpr).init(reader.allocator) };
+    fn readSequence(reader: *Reader, seqEndSym: []const u8) !ArrayList(MalExpr) {
+        var ls = ArrayList(MalExpr).init(reader.allocator);
         reader.next();
         var listDone = false;
 
         while (!listDone and reader.index < reader.tokens.items.len) {
             var token = reader.peek();
-            if (strEql(token, ")")) {
+            if (strEql(token, seqEndSym)) {
                 listDone = true;
                 reader.next();
                 continue;
             }
             var form = try reader.readForm();
-            try malist.list.append(form);
+            try ls.append(form);
         }
         if (!listDone) {
-            std.debug.warn("{s}\n", .{"expected ), got EOF"});
+            std.debug.warn("expected {s}, got EOF\n", .{seqEndSym});
             return error.UnmatchedParens;
         }
-        return malist;
+        return ls;
+    }
+    pub fn readList(reader: *Reader) !MalExpr {
+        var ls = try reader.readSequence(")");
+        return MalExpr{ .list = ls };
+    }
+    pub fn readVector(reader: *Reader) !MalExpr {
+        var vec = try reader.readSequence("]");
+        return MalExpr{ .vector = vec };
     }
     pub fn readAtom(reader: *Reader) !MalExpr {
         var token = reader.peek();
         reader.next();
 
         if (std.fmt.parseFloat(f64, token)) |num| {
-            return MalExpr{ .number = num };
+            if (!strEql(token, "+") and !strEql(token, "-"))
+                return MalExpr{ .number = num };
         } else |_| {}
 
         if (token[0] == '"') {

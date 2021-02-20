@@ -13,4 +13,5 @@ dist: mal
 .PHONY: clean
 
 clean:
+	rm -rf zig-cache
 	rm -f $(STEPS)

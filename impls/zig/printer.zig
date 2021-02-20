@@ -28,7 +28,7 @@ pub fn printStr(allocator: *std.mem.Allocator, ast: MalExpr) anyerror![]u8 {
             }
             return try allocator.dupe(u8, "false");
         },
-        .list, .vector => |value| {
+        .list => |value| {
             var result = std.ArrayList(u8).init(allocator);
             try result.appendSlice("(");
             for (value.items) |token, index| {
@@ -39,6 +39,21 @@ pub fn printStr(allocator: *std.mem.Allocator, ast: MalExpr) anyerror![]u8 {
             }
             try result.appendSlice(")");
             return result.items;
+        },
+        .vector => |value| {
+            var result = std.ArrayList(u8).init(allocator);
+            try result.appendSlice("[");
+            for (value.items) |token, index| {
+                var printed = try printStr(allocator, token);
+                try result.appendSlice(printed);
+                if (index < value.items.len - 1)
+                    try result.appendSlice(" ");
+            }
+            try result.appendSlice("]");
+            return result.items;
+        },
+        .func => {
+            return try allocator.dupe(u8, "function: TBD");
         },
     }
 }

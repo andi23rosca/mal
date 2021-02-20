@@ -23,6 +23,7 @@ pub const MalKind = enum {
     // hash,
     vector,
     keyword,
+    func,
 };
 
 pub const MalExpr = union(MalKind) {
@@ -35,4 +36,5 @@ pub const MalExpr = union(MalKind) {
     list: ArrayList(MalExpr),
     vector: ArrayList(MalExpr),
     // hash: AutoHashMap(u8, MalExpr),
+    func: fn (args: []MalExpr, out: *MalExpr) void,
 };
