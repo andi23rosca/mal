@@ -8,6 +8,7 @@ const printStr = @import("printer.zig").printStr;
 fn READ(allocator: *std.mem.Allocator, pr: []u8) !MalExpr {
     return try readStr(allocator, pr);
 }
+
 fn EVAL(pr: MalExpr) MalExpr {
     return pr;
 }
@@ -40,4 +41,10 @@ pub fn main() anyerror!void {
 
         arena.deinit();
     }
+}
+
+test "hash map" {
+    var alloc = std.testing.allocator;
+    var hash = std.StringHashMap(fn () void).init(alloc);
+    defer hash.deinit();
 }

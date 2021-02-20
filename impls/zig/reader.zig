@@ -1,41 +1,10 @@
 const std = @import("std");
 const eql = std.mem.eql;
+const types = @import("types.zig");
 const ArrayList = std.ArrayList;
-const AutoHashMap = std.AutoHashMap;
-
-const TkState = enum {
-    parseError,
-    endOfData,
-    findStartOfToken,
-    captureSpecialDoubleToken,
-    captureString,
-    captureStringEscape,
-    captureSemicolonToken,
-    captureNonSpecial,
-};
-
-pub const MalKind = enum {
-    list,
-    number,
-    symbol,
-    boolean,
-    string,
-    nil,
-    // hash,
-    vector,
-    keyword,
-};
-pub const MalExpr = union(MalKind) {
-    number: f64,
-    boolean: bool,
-    nil: void,
-    string: ArrayList(u8),
-    symbol: ArrayList(u8),
-    keyword: ArrayList(u8),
-    list: ArrayList(MalExpr),
-    vector: ArrayList(MalExpr),
-    // hash: AutoHashMap(u8, MalExpr),
-};
+const MalExpr = types.MalExpr;
+const MalKind = types.MalKind;
+const TkState = types.TkState;
 
 pub const Reader = struct {
     index: u64,

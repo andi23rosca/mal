@@ -1,5 +1,5 @@
 const std = @import("std");
-const MalExpr = @import("reader.zig").MalExpr;
+const MalExpr = @import("types.zig").MalExpr;
 
 pub fn printStr(allocator: *std.mem.Allocator, ast: MalExpr) anyerror![]u8 {
     switch (ast) {
